@@ -47,3 +47,5 @@ class SettingCreateSchema(BaseModel):
     requested_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
     completed_date: Optional[datetime] = None
+
+    is_computer: bool = False
