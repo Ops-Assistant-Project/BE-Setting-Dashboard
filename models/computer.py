@@ -52,8 +52,6 @@ class Computer(Document):
     meta = {
         "collection": "computers",
         "indexes": [
-            "serial",
             "device_id",
-            "user_email",
         ]
     }
