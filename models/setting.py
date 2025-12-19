@@ -1,52 +1,120 @@
 from datetime import datetime
-from pydantic import BaseModel, Field
-from typing import List, Optional, Literal, ClassVar, Dict
-from models.mongo_base import MongoBaseModel
+from enum import Enum
+from mongoengine import (
+    Document,
+    EmbeddedDocument,
+    StringField,
+    BooleanField,
+    DateTimeField,
+    EmbeddedDocumentListField,
+)
+from mongoengine.fields import EnumField
 
 
-class QuickAction(BaseModel):
-    action: str # 액션 이름
-    requested_by: str   # 마지막으로 실행한 사람 이름
-    requested_at: datetime  # 마지막으로 실행한 날짜
-    status: Literal["n/a", "pending", "progress", "done", "error"]  # 관련 없음, 진행 전, 진행 중, 진행 완료, 오류 발생
-    error_message: Optional[str] = None
+class Role(str, Enum):
+    TEAM = "team"   # 팀원
+    ASST = "asst"   # 어시
 
-class CheckListItem(BaseModel):
-    label: str  # 체크리스트 아이템
-    checked: bool = False   # True: 완료 / False: 미완료
 
-class Setting(MongoBaseModel):
+class DeviceType(str, Enum):
+    EDP001 = "EDP001"   # 인터넷 PC
+    EDP002 = "EDP002"
+    EDP003 = "EDP003"
+
+
+class NetworkType(str, Enum):
+    TEAM = "team"   # 인터넷망
+    SEC = "sec" # 분리망
+
+
+class OnboardingType(str, Enum):
+    PENDING = "pending" # 미정
+    NEW = "new" # 신규 입사
+    REPLACE = "replace" # 교체
+    REJOIN = "rejoin"   # 복직
+    SWITCH = "switch"   # 전환
+
+
+class SettingStatus(str, Enum):
+    PENDING = "pending" # 출고 전
+    SHIPPED = "shipped" # 출고 완료
+    SETTING = "setting" # 세팅 중
+    COMPLETED = "completed" # 세팅 완료
+
+
+class Company(str, Enum):
+    CORE = "core"
+    BANK = "bank"
+    INSU = "insu"
+
+
+class QuickActionStatus(str, Enum):
+    NA = "n/a"  # 관련 없음
+    PENDING = "pending"
+    PROGRESS = "progress"
+    DONE = "done"
+    ERROR = "error"
+
+
+class QuickAction(EmbeddedDocument):
+    """
+    빠른 실행 액션 기록
+    """
+    action = StringField(required=True) # 액션 이름 (win-setting, okta-setting 등)
+    requested_by = StringField(required=True)   # 실행한 사람
+    requested_at = DateTimeField(required=True) # 실행 시각
+    status = EnumField(QuickActionStatus, required=True)
+    error_message = StringField(null=True)
+
+
+class CheckListItem(EmbeddedDocument):
+    """
+    체크리스트 아이템
+    """
+    label = StringField(required=True)  # 체크 항목 이름
+    checked = BooleanField(default=False)   # 완료 여부
+
+
+class Setting(Document):
+    """
+    PC 세팅 요청 메인 모델
+    """
+
     # 사용자 정보
-    user_name: str
-    user_email: str
-    role: Literal["team", "asst"]   # 팀원, 어시
-    collaborators: Optional[str] = None    # 협업 팀원(어시일 경우)
+    user_name = StringField(required=True)
+    user_email = StringField(required=True)
+    role = EnumField(Role, required=True)
+    collaborators = StringField(null=True)
 
-    # pc 정보
-    os: str
-    model: str
-    serial: str
-    device_type: Literal["EDP001", "EDP002", "EDP003"]  # 단말 종류(인터넷PC, ...)
-    network_type: Literal["team", "sec"]    # 망 종류(인터넷망, 분리망)
+    # PC 정보
+    os = StringField(required=True)
+    model = StringField(required=True)
+    serial = StringField(required=True)
+    device_type = EnumField(DeviceType, required=True)
+    network_type = EnumField(NetworkType, required=True)
 
-    urgency: bool # 긴급도(True: 급건/False: 일반)
-    onboarding_type: Literal["pending", "new", "replace", "rejoin", "switch"]   # 미정, 신규입사, 교체, 복직, 전환
-    status: Literal["pending", "shipped", "setting", "completed"]  # 출고 전, 출고완료, 세팅중, 세팅완료
-    memo: Optional[str] = None # 메모
-    checklist: Optional[List[CheckListItem]] = None
-    quick_actions: List[QuickAction] = Field(default_factory=list)
-    assignee_name: Optional[str] = None
-    company: Literal["core", "bank", "insu"]
+    # 상태 정보
+    urgency = BooleanField(required=True)   # True: 급건 / False: 일반
+    onboarding_type = EnumField(OnboardingType, required=True)
+    status = EnumField(SettingStatus, required=True)
 
-    requested_date: Optional[datetime] = None    # 요청일
-    due_date: Optional[datetime] = None  # 마감일
-    completed_date: Optional[datetime] = None    # 완료일
+    # 기타
+    memo = StringField(null=True)
+    checklist = EmbeddedDocumentListField(CheckListItem)
+    quick_actions = EmbeddedDocumentListField(QuickAction)
 
-    meta: ClassVar[Dict[str, str]] = {
-        "collection": "setting"
+    assignee_name = StringField(null=True)
+    company = EnumField(Company, required=True)
+
+    # 일정
+    requested_date = DateTimeField(null=True)
+    due_date = DateTimeField(null=True)
+    completed_date = DateTimeField(null=True)
+
+    meta = {
+        "collection": "setting",
+        "indexes": [
+            "user_email",
+            "serial",
+        ]
     }
-
-    @classmethod
-    def get_collection(cls):
-        from db.mongodb import mongodb
-        return mongodb.db[cls.meta["collection"]]

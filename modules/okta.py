@@ -1,7 +1,7 @@
 import os
 import requests
 from dotenv import load_dotenv
-from core.common_response import CommonResponse
+from common.response import CommonResponse
 
 
 class OktaClient():

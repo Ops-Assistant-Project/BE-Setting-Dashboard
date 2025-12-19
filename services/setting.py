@@ -1,26 +1,33 @@
-from bson import ObjectId
 from typing import List, Dict, Any
 from models.setting import Setting
 from services.crud_base import CrudBase
+from modules.okta import OktaClient
+from common.constants import OktaGroups
 
 
 class SettingService(CrudBase):
     model = Setting
 
+    def __init__(self):
+        self.okta_client = OktaClient()
+
     @classmethod
-    def update(cls, updates: List[Dict[str, Any]]):
+    def bulk_update(cls, updates: List[Dict[str, Any]]):
         """
-        Bulk update
-        Body: {
-            updates = [
+        여러 Setting 문서를 개별 업데이트
+
+        Body 예시:
+        {
+            "updates": [
                 {
                     "id": "<setting_id>",
-                    "data": { ...update fields... }
+                    "data": {
+                        "status": "setting"
+                    }
                 }
             ]
         }
         """
-        col = cls._col()
         results = []
 
         for item in updates:
@@ -30,18 +37,17 @@ class SettingService(CrudBase):
             if not setting_id or not data:
                 continue
 
-            result = col.update_one(
-                {"_id": ObjectId(setting_id)},
-                {"$set": data}
-            )
+            updated = cls.model.objects(id=setting_id).update_one(**{
+                f"set__{k}": v for k, v in data.items()
+            })
 
             results.append({
                 "id": setting_id,
-                "matched": result.matched_count,
-                "modified": result.modified_count
+                "updated": updated > 0
             })
 
         return {
-            "updated_count": len(results),
+            "requested_count": len(updates),
+            "updated_count": sum(1 for r in results if r["updated"]),
             "results": results
         }
