@@ -1,6 +1,7 @@
 from fastapi import FastAPI
-from controllers.setting import router as SettingController
 from db.mongodb import connect_to_mongo
+from controllers.setting import router as SettingController
+from controllers.employee import router as EmployeeController
 
 app = FastAPI(title="PC Setting Dashboard API")
 
@@ -16,3 +17,4 @@ def root():
 
 
 app.include_router(SettingController)
+app.include_router(EmployeeController)
