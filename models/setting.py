@@ -60,10 +60,10 @@ class QuickAction(EmbeddedDocument):
     빠른 실행 액션 기록
     """
     action = StringField(required=True) # 액션 이름 (win-setting, okta-setting 등)
-    requested_by = StringField(required=True)   # 실행한 사람
-    requested_at = DateTimeField(required=True) # 실행 시각
+    requested_by = StringField(required=False, null=True)   # 실행한 사람
+    requested_at = DateTimeField(required=False, null=True) # 실행 시각
     status = EnumField(QuickActionStatus, required=True)
-    error_message = StringField(null=True)
+    error_message = StringField(required=False, null=True)
 
 
 class CheckListItem(EmbeddedDocument):

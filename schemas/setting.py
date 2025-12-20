@@ -8,14 +8,6 @@ class CheckListItemSchema(BaseModel):
     checked: bool = False
 
 
-class QuickActionSchema(BaseModel):
-    action: str
-    requested_by: str
-    requested_at: datetime
-    status: Literal["n/a", "pending", "progress", "done", "error"]
-    error_message: Optional[str] = None
-
-
 class SettingCreateSchema(BaseModel):
     # 사용자 정보
     user_name: str
@@ -38,7 +30,6 @@ class SettingCreateSchema(BaseModel):
     # 기타
     memo: Optional[str] = None
     checklist: Optional[List[CheckListItemSchema]] = None
-    quick_actions: Optional[List[QuickActionSchema]] = None
 
     assignee_name: Optional[str] = None
     company: Literal["core", "bank", "insu"]

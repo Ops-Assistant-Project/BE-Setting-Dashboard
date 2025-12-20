@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from models.setting import Setting
 from models.computer import Computer
 from models.employee import Employee
@@ -38,6 +38,7 @@ class SettingService(CrudBase):
                 onboarding_type = data.onboarding_type,
                 status = data.status,
                 memo = data.memo,
+                quick_actions = cls.generate_quick_actions(os=computer.os, onboarding_type=data.onboarding_type),
                 company = data.company,
                 requested_date = data.requested_date,
                 due_date = data.due_date
@@ -57,6 +58,7 @@ class SettingService(CrudBase):
                 onboarding_type = data.onboarding_type,
                 status = data.status,
                 memo = data.memo,
+                quick_actions = cls.generate_quick_actions(os=data.os, onboarding_type=data.onboarding_type),
                 company = data.company,
                 requested_date = data.requested_date,
                 due_date = data.due_date
@@ -91,8 +93,38 @@ class SettingService(CrudBase):
             if not setting_id or not data:
                 continue
 
+            setting = cls.model.objects(id=setting_id).first()
+            if not setting:
+                results.append({
+                    "id": setting_id,
+                    "updated": False,
+                    "reason": "not_found"
+                })
+                continue
+
+            update_data = data.copy()
+
+            os_changed = "os" in data and data["os"] != setting.os
+            onboarding_changed = (
+                    "onboarding_type" in data
+                    and data["onboarding_type"] != setting.onboarding_type
+            )
+
+            if os_changed or onboarding_changed:
+                new_os = data.get("os", setting.os)
+                new_onboarding_type = data.get(
+                    "onboarding_type",
+                    setting.onboarding_type
+                )
+
+                update_data["quick_actions"] = cls.generate_quick_actions(
+                    os=new_os,
+                    onboarding_type=new_onboarding_type,
+                    prev_actions=setting.quick_actions
+                )
+
             updated = cls.model.objects(id=setting_id).update_one(**{
-                f"set__{k}": v for k, v in data.items()
+                f"set__{k}": v for k, v in update_data.items()
             })
 
             results.append({
@@ -154,14 +186,116 @@ class SettingService(CrudBase):
         사용자 Okta 계정 활성화
         """
         fail_user_name = []
+        continue_user_name = []
 
-        # for setting_id in setting_ids:
-        #     setting = Setting.objects(id=setting_id).first()
-        #
-        #     if len(setting_ids) == 1:
-        #         res = self.okta_client.activate_user(user_id=setting.)
-        #     res = self.okta_client.activate_user(user_id=)
-        #     if not res.ok:
-        #         fail_ids.append(user_id)
-        #
-        # return fail_ids
+        for setting_id in setting_ids:
+            setting = Setting.objects(id=setting_id).first()
+
+            # TODO: 단일일 때만 재실행 가능 추가
+            okta_activate = self.get_quick_actions(setting, ['okta_activate'])
+
+
+            user = Employee.objects(email=setting.user_email).first()
+            if not user:
+                fail_user_name.append(setting.user_name)
+                continue
+
+            res = self.okta_client.activate_user(user_id=user.okta_user_id)
+            if not res.ok:
+                fail_user_name.append(setting.user_name)
+                setting.save()
+
+            # TODO: quick_actions 수정
+
+
+        return fail_user_name
+
+
+    @staticmethod
+    def get_quick_actions(setting: Setting, actions: List[str]) -> List[Dict]:
+        """
+        setting.quick_actions에서 actions 리스트에 해당하는 객체만 반환
+        :param setting: Setting 객체
+        :param actions: 예. ['win-setting', 'o365-intune']
+        :return: 조건에 맞는 quick_actions 객체 리스트
+        """
+        return [
+            action
+            for action in setting.quick_actions
+            if action["action"] in actions
+        ]
+
+    @staticmethod
+    def generate_quick_actions(
+            os: str,
+            onboarding_type: str,
+            prev_actions: Optional[List[Any]] = None
+    ) -> List[Dict]:
+        """
+        onboarding_type과 OS에 따라 quick_actions 리스트 생성
+        - status는 조건에 따라 재계산
+        - requested_by, requested_at, error_message는 기존 값 유지
+
+        :param os: 'Windows', 'Mac'
+        :param onboarding_type: 'pending', 'new', 'rejoin', 'replace', 'switch'
+        :param prev_actions:
+        :return:
+        """
+
+        all_actions = [
+            "okta-setting",
+            "win-setting",
+            "o365-intune",
+            "password-notice",
+            "pickup-notice",
+            "okta-activate"
+        ]
+
+        actions_map = {
+            "new": ["okta-setting"],
+            "replace": ["okta-setting", "password-notice", "pickup-notice"],
+            "rejoin": ["okta-activate"],
+            "switch": ["okta-setting"],
+            "pending": []
+        }
+
+        active_actions = actions_map.get(onboarding_type, [])
+
+        if os.lower() == "windows" and onboarding_type in ["new", "replace", "switch"]:
+            active_actions.extend(["win-setting", "o365-intune"])
+
+        active_actions = set(active_actions)
+
+        prev_map = {
+            qa.action: qa
+            for qa in (prev_actions or [])
+        }
+
+        quick_actions = []
+
+        for action in all_actions:
+            prev = prev_map.get(action)
+
+            requested_by = getattr(prev, "requested_by", None)
+            requested_at = getattr(prev, "requested_at", None)
+            error_message = getattr(prev, "error_message", None)
+
+            if action in active_actions:
+                if requested_by and requested_at and error_message:
+                    status = "error"
+                elif requested_by and requested_at:
+                    status = "done"
+                else:
+                    status = "pending"
+            else:
+                status = "n/a"
+
+            quick_actions.append({
+                "action": action,
+                "status": status,
+                "requested_by": requested_by,
+                "requested_at": requested_at,
+                "error_message": error_message,
+            })
+
+        return quick_actions
