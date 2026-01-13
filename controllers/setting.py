@@ -79,6 +79,6 @@ def delete_setting(setting_id: str):
 #     return SettingService.pickup_notice(request.setting_ids)
 #
 #
-# @router.patch("/action/okta-activate", summary="빠른 실행 - Okta 계정 활성화")
-# def okta_activate(request: OktaRequest):
-#     return SettingService.okta_activate(request.setting_ids)
+@router.patch("/action/okta-activate", summary="빠른 실행 - Okta 계정 활성화")
+def okta_activate(request: OktaRequest):
+    return SettingService().okta_activate(request.setting_ids)

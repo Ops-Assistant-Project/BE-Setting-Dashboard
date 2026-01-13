@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Optional
-from models.setting import Setting
+from models.setting import Setting, QuickActionStatus
 from models.computer import Computer
 from models.employee import Employee
 from modules.okta import OktaClient
@@ -14,6 +14,15 @@ class SettingService(CrudBase):
 
     def __init__(self):
         self.okta_client = OktaClient()
+        self.SINGLE_EXECUTABLE_STATUS = {
+            QuickActionStatus.PENDING,
+            QuickActionStatus.ERROR,
+            QuickActionStatus.DONE
+        }
+        self.BULK_EXECUTABLE_STATUS = {
+            QuickActionStatus.PENDING,
+            QuickActionStatus.ERROR
+        }
 
 
     @classmethod
@@ -187,32 +196,42 @@ class SettingService(CrudBase):
         """
         fail_user_name = []
         continue_user_name = []
+        is_single = len(setting_ids) == 1
 
         for setting_id in setting_ids:
             setting = Setting.objects(id=setting_id).first()
+            actions = self.get_quick_actions(setting, ['okta-activate'])
+            status = actions[0]["status"].value
 
-            # TODO: 단일일 때만 재실행 가능 추가
-            okta_activate = self.get_quick_actions(setting, ['okta_activate'])
-
+            # 실행 가능 여부 확인
+            if not self._is_executable(status=status, is_single=is_single):
+                continue
 
             user = Employee.objects(email=setting.user_email).first()
             if not user:
                 fail_user_name.append(setting.user_name)
                 continue
 
-            res = self.okta_client.activate_user(user_id=user.okta_user_id)
-            if not res.ok:
-                fail_user_name.append(setting.user_name)
-                setting.save()
+            # res = self.okta_client.activate_user(user_id=user.okta_user_id)
+            # if not res.ok:
+            #     fail_user_name.append(setting.user_name)
+            #     setting.save()
 
             # TODO: quick_actions 수정
 
 
         return fail_user_name
 
+    def _is_executable(self, status: QuickActionStatus, is_single: bool) -> bool:
+        """
+        실행 가능 여부 판단 함수
+        """
+        if is_single:
+            return status in self.SINGLE_EXECUTABLE_STATUS
+        return status in self.BULK_EXECUTABLE_STATUS
 
     @staticmethod
-    def get_quick_actions(setting: Setting, actions: List[str]) -> List[Dict]:
+    def get_quick_actions(setting: Setting, actions: List[str]) -> List[dict]:
         """
         setting.quick_actions에서 actions 리스트에 해당하는 객체만 반환
         :param setting: Setting 객체
@@ -220,9 +239,15 @@ class SettingService(CrudBase):
         :return: 조건에 맞는 quick_actions 객체 리스트
         """
         return [
-            action
-            for action in setting.quick_actions
-            if action["action"] in actions
+            {
+                "action": qa.action,
+                "status": qa.status,
+                "requested_by": qa.requested_by,
+                "requested_at": qa.requested_at,
+                "error_message": qa.error_message,
+            }
+            for qa in setting.quick_actions
+            if qa.action in actions
         ]
 
     @staticmethod
