@@ -1,5 +1,6 @@
+from datetime import datetime
 from typing import List, Dict, Any, Optional
-from models.setting import Setting, QuickActionStatus
+from models.setting import Setting, QuickActionStatus, QuickAction
 from models.computer import Computer
 from models.employee import Employee
 from modules.okta import OktaClient
@@ -17,10 +18,12 @@ class SettingService(CrudBase):
         self.SINGLE_EXECUTABLE_STATUS = {
             QuickActionStatus.PENDING,
             QuickActionStatus.ERROR,
+            QuickActionStatus.PROGRESS,
             QuickActionStatus.DONE
         }
         self.BULK_EXECUTABLE_STATUS = {
             QuickActionStatus.PENDING,
+            QuickActionStatus.PROGRESS,
             QuickActionStatus.ERROR
         }
 
@@ -190,37 +193,52 @@ class SettingService(CrudBase):
         return fail_ids
 
 
-    def okta_activate(self, setting_ids: List[str]):
+    def okta_activate(self, setting_ids: List[str], requested_by: str = None):
         """
         사용자 Okta 계정 활성화
         """
         fail_user_name = []
-        continue_user_name = []
         is_single = len(setting_ids) == 1
 
         for setting_id in setting_ids:
             setting = Setting.objects(id=setting_id).first()
-            actions = self.get_quick_actions(setting, ['okta-activate'])
-            status = actions[0]["status"].value
-
-            # 실행 가능 여부 확인
-            if not self._is_executable(status=status, is_single=is_single):
+            if not setting:
                 continue
 
-            user = Employee.objects(email=setting.user_email).first()
-            if not user:
+            quick_action = self._get_quick_action(setting, 'okta-activate')
+
+            # 실행 시작 - progress
+            self._mark_quick_action_progress(
+                action=quick_action,
+                requested_by=requested_by,
+            )
+            setting.save()
+
+            status = quick_action.status
+
+            try:
+                # 실행 가능 여부 확인
+                if not self._is_executable(status=status, is_single=is_single):
+                    raise Exception(f"Not executable status: {status.value}")
+
+                user = Employee.objects(email=setting.user_email).first()
+                if not user:
+                    raise Exception("User not found")
+
+                # 계정 활성화
+                # res = self.okta_client.activate_user(user_id=user.okta_user_id)
+                # if not res.ok:
+                #     raise Exception(res.error or "Okta activation failed")
+
+                # 성공 시
+                self._mark_quick_action_done(action=quick_action)
+            except Exception as e:
+                self._mark_quick_action_error(action=quick_action, error_message=str(e))
                 fail_user_name.append(setting.user_name)
-                continue
+            finally:
+                setting.save()
 
-            # res = self.okta_client.activate_user(user_id=user.okta_user_id)
-            # if not res.ok:
-            #     fail_user_name.append(setting.user_name)
-            #     setting.save()
-
-            # TODO: quick_actions 수정
-
-
-        return fail_user_name
+        return {"failed_users": fail_user_name, "failed_count": len(fail_user_name), "success_count": len(setting_ids) - len(fail_user_name)}
 
     def _is_executable(self, status: QuickActionStatus, is_single: bool) -> bool:
         """
@@ -230,25 +248,31 @@ class SettingService(CrudBase):
             return status in self.SINGLE_EXECUTABLE_STATUS
         return status in self.BULK_EXECUTABLE_STATUS
 
-    @staticmethod
-    def get_quick_actions(setting: Setting, actions: List[str]) -> List[dict]:
+    def _get_quick_action(self, setting, action_name: str) -> QuickAction | None:
         """
         setting.quick_actions에서 actions 리스트에 해당하는 객체만 반환
         :param setting: Setting 객체
-        :param actions: 예. ['win-setting', 'o365-intune']
-        :return: 조건에 맞는 quick_actions 객체 리스트
+        :param action_name: 예. 'o365-intune'
+        :return: 조건에 맞는 quick_action 객체
         """
-        return [
-            {
-                "action": qa.action,
-                "status": qa.status,
-                "requested_by": qa.requested_by,
-                "requested_at": qa.requested_at,
-                "error_message": qa.error_message,
-            }
-            for qa in setting.quick_actions
-            if qa.action in actions
-        ]
+        for action in setting.quick_actions:
+            if action.action == action_name:
+                return action
+        return None
+
+    def _mark_quick_action_progress(self, action: QuickAction, requested_by: str):
+        action.requested_by = requested_by
+        action.requested_at = datetime.utcnow()
+        action.status = QuickActionStatus.PROGRESS
+        action.error_message = None
+
+    def _mark_quick_action_done(self, action: QuickAction):
+        action.status = QuickActionStatus.DONE
+        action.error_message = None
+
+    def _mark_quick_action_error(self, action: QuickAction, error_message: str):
+        action.status = QuickActionStatus.ERROR
+        action.error_message = error_message
 
     @staticmethod
     def generate_quick_actions(

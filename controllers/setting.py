@@ -11,6 +11,7 @@ router = APIRouter(prefix="/settings", tags=["Settings"])
 
 class OktaRequest(BaseModel):
     setting_ids: List[str]
+    requested_by: str
 
 
 class BulkUpdateRequest(BaseModel):
@@ -81,4 +82,4 @@ def delete_setting(setting_id: str):
 #
 @router.patch("/action/okta-activate", summary="빠른 실행 - Okta 계정 활성화")
 def okta_activate(request: OktaRequest):
-    return SettingService().okta_activate(request.setting_ids)
+    return SettingService().okta_activate(request.setting_ids, request.requested_by)
