@@ -151,18 +151,57 @@ class SettingService(CrudBase):
         }
 
 
-    def add_okta_setting(self, user_ids: List[str]):
+    def okta_setting(self, setting_ids: List[str], requested_by: str = None):
         """
         Okta Setting 그룹에 추가 및 비밀번호 재설정
         """
-        fail_ids = []
+        fail_user_name = []
+        is_single = len(setting_ids) == 1
 
-        for user_id in user_ids:
-            res = self.okta_client.add_user_to_group(group_id=OktaGroups.ALL_SETTING, user_id=user_id)
-            if not res.ok:
-                fail_ids.append(user_id)
+        for setting_id in setting_ids:
+            setting = Setting.objects(id=setting_id).first()
+            if not setting:
+                continue
 
-        return fail_ids
+            quick_action = self._get_quick_action(setting, 'okta-setting')
+            status = quick_action.status
+
+            # 실행 가능 여부 확인
+            if not self._is_executable(status=status, is_single=is_single):
+                # n/a일 경우: 상태 유지 + 에러 메시지만 기록
+                if status == QuickActionStatus.NA:
+                    quick_action.error_message = "Action not applicable for this setting"
+                    setting.save()
+                fail_user_name.append(setting.user_name)
+                continue
+
+            # 실행 시작 - progress
+            self._mark_quick_action_progress(
+                action=quick_action,
+                requested_by=requested_by,
+            )
+            setting.save()
+
+            try:
+                user = Employee.objects(email=setting.user_email).first()
+                if not user:
+                    raise Exception("User not found")
+
+                # # okta-setting 그룹에 유저 추가
+                # res = self.okta_client.add_user_to_group(group_id=OktaGroups.ALL_SETTING, user_id=user.okta_user_id)
+                # if not res.ok:
+                #     raise Exception(res.error or "Okta Setting group assignment failed")
+
+                # 성공 시
+                self._mark_quick_action_done(action=quick_action)
+            except Exception as e:
+                self._mark_quick_action_error(action=quick_action, error_message=str(e))
+                fail_user_name.append(setting.user_name)
+            finally:
+                setting.save()
+
+        return {"failed_users": fail_user_name, "failed_count": len(fail_user_name), "success_count": len(setting_ids) - len(fail_user_name)}
+
 
     def win_setting(self, setting_ids: List[str], requested_by: str = None):
         """
@@ -214,8 +253,6 @@ class SettingService(CrudBase):
                 setting.save()
 
         return {"failed_users": fail_user_name, "failed_count": len(fail_user_name), "success_count": len(setting_ids) - len(fail_user_name)}
-
-
 
     def o365_setting(self, setting_ids: List[str], requested_by: str = None):
         """
