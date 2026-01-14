@@ -194,6 +194,8 @@ class SettingService(CrudBase):
 
                 # 성공 시
                 self._mark_quick_action_done(action=quick_action)
+
+                # TODO: 비밀번호 초기화 및 초기화 안내 전송 추가
             except Exception as e:
                 self._mark_quick_action_error(action=quick_action, error_message=str(e))
                 fail_user_name.append(setting.user_name)
