@@ -164,7 +164,6 @@ class SettingService(CrudBase):
 
         return fail_ids
 
-
     def win_setting(self, setting_ids: List[str], requested_by: str = None):
         """
         Okta Win Setting 그룹에 추가
@@ -178,6 +177,16 @@ class SettingService(CrudBase):
                 continue
 
             quick_action = self._get_quick_action(setting, 'win-setting')
+            status = quick_action.status
+
+            # 실행 가능 여부 확인
+            if not self._is_executable(status=status, is_single=is_single):
+                # n/a일 경우: 상태 유지 + 에러 메시지만 기록
+                if status == QuickActionStatus.NA:
+                    quick_action.error_message = "Action not applicable for this setting"
+                    setting.save()
+                fail_user_name.append(setting.user_name)
+                continue
 
             # 실행 시작 - progress
             self._mark_quick_action_progress(
@@ -186,13 +195,7 @@ class SettingService(CrudBase):
             )
             setting.save()
 
-            status = quick_action.status
-
             try:
-                # 실행 가능 여부 확인
-                if not self._is_executable(status=status, is_single=is_single):
-                    raise Exception(f"Not executable status: {status.value}")
-
                 user = Employee.objects(email=setting.user_email).first()
                 if not user:
                     raise Exception("User not found")
@@ -227,6 +230,16 @@ class SettingService(CrudBase):
                 continue
 
             quick_action = self._get_quick_action(setting, 'o365-intune')
+            status = quick_action.status
+
+            # 실행 가능 여부 확인
+            if not self._is_executable(status=status, is_single=is_single):
+                # n/a일 경우: 상태 유지 + 에러 메시지만 기록
+                if status == QuickActionStatus.NA:
+                    quick_action.error_message = "Action not applicable for this setting"
+                    setting.save()
+                fail_user_name.append(setting.user_name)
+                continue
 
             # 실행 시작 - progress
             self._mark_quick_action_progress(
@@ -235,13 +248,7 @@ class SettingService(CrudBase):
             )
             setting.save()
 
-            status = quick_action.status
-
             try:
-                # 실행 가능 여부 확인
-                if not self._is_executable(status=status, is_single=is_single):
-                    raise Exception(f"Not executable status: {status.value}")
-
                 user = Employee.objects(email=setting.user_email).first()
                 if not user:
                     raise Exception("User not found")
@@ -261,8 +268,6 @@ class SettingService(CrudBase):
 
         return {"failed_users": fail_user_name, "failed_count": len(fail_user_name), "success_count": len(setting_ids) - len(fail_user_name)}
 
-
-
     def okta_activate(self, setting_ids: List[str], requested_by: str = None):
         """
         사용자 Okta 계정 활성화
@@ -276,6 +281,16 @@ class SettingService(CrudBase):
                 continue
 
             quick_action = self._get_quick_action(setting, 'okta-activate')
+            status = quick_action.status
+
+            # 실행 가능 여부 확인
+            if not self._is_executable(status=status, is_single=is_single):
+                # n/a일 경우: 상태 유지 + 에러 메시지만 기록
+                if status == QuickActionStatus.NA:
+                    quick_action.error_message = "Action not applicable for this setting"
+                    setting.save()
+                fail_user_name.append(setting.user_name)
+                continue
 
             # 실행 시작 - progress
             self._mark_quick_action_progress(
@@ -284,13 +299,7 @@ class SettingService(CrudBase):
             )
             setting.save()
 
-            status = quick_action.status
-
             try:
-                # 실행 가능 여부 확인
-                if not self._is_executable(status=status, is_single=is_single):
-                    raise Exception(f"Not executable status: {status.value}")
-
                 user = Employee.objects(email=setting.user_email).first()
                 if not user:
                     raise Exception("User not found")
