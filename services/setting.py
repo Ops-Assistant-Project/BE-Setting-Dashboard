@@ -165,32 +165,102 @@ class SettingService(CrudBase):
         return fail_ids
 
 
-    def add_win_setting(self, user_ids: List[str]):
+    def win_setting(self, setting_ids: List[str], requested_by: str = None):
         """
         Okta Win Setting 그룹에 추가
         """
-        fail_ids = []
+        fail_user_name = []
+        is_single = len(setting_ids) == 1
 
-        for user_id in user_ids:
-            res = self.okta_client.add_user_to_group(group_id=OktaGroups.WIN_SETTING, user_id=user_id)
-            if not res.ok:
-                fail_ids.append(user_id)
+        for setting_id in setting_ids:
+            setting = Setting.objects(id=setting_id).first()
+            if not setting:
+                continue
 
-        return fail_ids
+            quick_action = self._get_quick_action(setting, 'win-setting')
+
+            # 실행 시작 - progress
+            self._mark_quick_action_progress(
+                action=quick_action,
+                requested_by=requested_by,
+            )
+            setting.save()
+
+            status = quick_action.status
+
+            try:
+                # 실행 가능 여부 확인
+                if not self._is_executable(status=status, is_single=is_single):
+                    raise Exception(f"Not executable status: {status.value}")
+
+                user = Employee.objects(email=setting.user_email).first()
+                if not user:
+                    raise Exception("User not found")
+
+                # # win-setting 그룹에 유저 추가
+                # res = self.okta_client.add_user_to_group(group_id=OktaGroups.WIN_SETTING, user_id=user.okta_user_id)
+                # if not res.ok:
+                #     raise Exception(res.error or "Windows group assignment failed")
+
+                # 성공 시
+                self._mark_quick_action_done(action=quick_action)
+            except Exception as e:
+                self._mark_quick_action_error(action=quick_action, error_message=str(e))
+                fail_user_name.append(setting.user_name)
+            finally:
+                setting.save()
+
+        return {"failed_users": fail_user_name, "failed_count": len(fail_user_name), "success_count": len(setting_ids) - len(fail_user_name)}
 
 
-    def add_o365_intune(self, user_ids: List[str]):
+
+    def o365_setting(self, setting_ids: List[str], requested_by: str = None):
         """
         Okta o365 Intune 그룹에 추가
         """
-        fail_ids = []
+        fail_user_name = []
+        is_single = len(setting_ids) == 1
 
-        for user_id in user_ids:
-            res = self.okta_client.add_user_to_group(group_id=OktaGroups.O365_INTUNE, user_id=user_id)
-            if not res.ok:
-                fail_ids.append(user_id)
+        for setting_id in setting_ids:
+            setting = Setting.objects(id=setting_id).first()
+            if not setting:
+                continue
 
-        return fail_ids
+            quick_action = self._get_quick_action(setting, 'o365-intune')
+
+            # 실행 시작 - progress
+            self._mark_quick_action_progress(
+                action=quick_action,
+                requested_by=requested_by,
+            )
+            setting.save()
+
+            status = quick_action.status
+
+            try:
+                # 실행 가능 여부 확인
+                if not self._is_executable(status=status, is_single=is_single):
+                    raise Exception(f"Not executable status: {status.value}")
+
+                user = Employee.objects(email=setting.user_email).first()
+                if not user:
+                    raise Exception("User not found")
+
+                # # 계정 활성화
+                # res = self.okta_client.add_user_to_group(group_id=OktaGroups.O365_INTUNE, user_id=user.okta_user_id)
+                # if not res.ok:
+                #     raise Exception(res.error or "Intune group assignment failed")
+
+                # 성공 시
+                self._mark_quick_action_done(action=quick_action)
+            except Exception as e:
+                self._mark_quick_action_error(action=quick_action, error_message=str(e))
+                fail_user_name.append(setting.user_name)
+            finally:
+                setting.save()
+
+        return {"failed_users": fail_user_name, "failed_count": len(fail_user_name), "success_count": len(setting_ids) - len(fail_user_name)}
+
 
 
     def okta_activate(self, setting_ids: List[str], requested_by: str = None):
