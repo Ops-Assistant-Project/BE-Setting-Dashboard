@@ -187,6 +187,7 @@ class SettingService(CrudBase):
                 if not user:
                     raise Exception("User not found")
 
+                # 슬랙 안내 DM 전송
                 self.slack_bot.chat_postMessage(
                     channel=user.slack_id,
                     text="Okta 비밀번호 초기화 안내",
