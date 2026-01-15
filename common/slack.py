@@ -1,13 +1,19 @@
-class SlackBotToken:
+class SlackBotName:
+    SETTING_BOT = "SETTING_BOT"
+
+class SlackEnvKey:
     """
-    Slack Bot Token 상수 정의
+    Slack Bot 환경변수 키 정의
 
     ⚠️ 주의
-    - 실제 운영 환경에서는 아래 값들을
-      Slack App에서 발급된 Bot User OAuth Token으로 교체해야 함
-    - 현재는 개발 / 포트폴리오용 임시 값
-    - 토큰 값은 반드시 환경변수 또는 Secret Manager로 관리할 것
+    - 현재는 개발 / 포트폴리오용 값
+    - 토큰 값은 반드시 crypto 암호화 후 저장할 것
     """
 
-    # Setting 서비스에서 사용하는 Slack 봇 토큰
-    SETTING_BOT = "your_setting_bot_token"
+    BOT_TOKENS = {
+        SlackBotName.SETTING_BOT: "gAAAAABpaJN7uCjMENGwZKzZwZaIlAGdSfS1f_vS_TuwTlXjVRFgzvfaiDo3iXO70q5NIVaodnz9C69JhH9J0faDhDOeM9A65GEKLV_m_zcXEAnAZOIBvW9VwsyujwPTVQ6w914oiUxZC_7udRGUMsPeSRDtaU2yvQ==",
+    }
+
+    SIGNING_SECRETS = {
+        SlackBotName.SETTING_BOT: "gAAAAABpaJQP9_x_drHai_z2NKyqkURbv7YtxSNDJD59JB0bkKiUFYiCv_cz_szFnvX-m_rd4Crvp3jYFoam6-DJ-F_cqrXUqDqkt_Wb169txFqTJoflB1Rmos8KpLk7VuCd8dYh6Y96",
+    }
