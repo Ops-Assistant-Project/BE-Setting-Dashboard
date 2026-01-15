@@ -5,6 +5,7 @@ from models.computer import Computer
 from models.employee import Employee
 from modules.okta import OktaClient
 from modules.slack import BoltApp
+from blocks.setting import password_notice_message_block
 from common.okta import OktaGroups
 from common.slack import SlackBotName
 from common.exceptions import NotFoundError
@@ -17,7 +18,7 @@ class SettingService(CrudBase):
 
     def __init__(self):
         self.okta_client = OktaClient()
-        self.slack_bot = BoltApp(SlackBotName.SETTING_BOT)
+        self.slack_bot = BoltApp(SlackBotName.SETTING_BOT).client
         self.SINGLE_EXECUTABLE_STATUS = {
             QuickActionStatus.PENDING,
             QuickActionStatus.ERROR,
@@ -154,7 +155,53 @@ class SettingService(CrudBase):
         }
 
     def password_notice(self, setting_ids: List[str], requested_by: str = None):
-        return
+        fail_user_name = []
+        is_single = len(setting_ids) == 1
+
+        for setting_id in setting_ids:
+            setting = Setting.objects(id=setting_id).first()
+            if not setting:
+                continue
+
+            quick_action = self._get_quick_action(setting, 'password-notice')
+            status = quick_action.status
+
+            # 실행 가능 여부 확인
+            if not self._is_executable(status=status, is_single=is_single):
+                # n/a일 경우: 상태 유지 + 에러 메시지만 기록
+                if status == QuickActionStatus.NA:
+                    quick_action.error_message = "Action not applicable for this setting"
+                    setting.save()
+                fail_user_name.append(setting.user_name)
+                continue
+
+            # 실행 시작 - progress
+            self._mark_quick_action_progress(
+                action=quick_action,
+                requested_by=requested_by,
+            )
+            setting.save()
+
+            try:
+                user = Employee.objects(email=setting.user_email).first()
+                if not user:
+                    raise Exception("User not found")
+
+                self.slack_bot.chat_postMessage(
+                    channel=user.slack_id,
+                    text="Okta 비밀번호 초기화 안내",
+                    blocks=password_notice_message_block(user_name=user.name)
+                )
+
+                # 성공 시
+                self._mark_quick_action_done(action=quick_action)
+            except Exception as e:
+                self._mark_quick_action_error(action=quick_action, error_message=str(e))
+                fail_user_name.append(setting.user_name)
+            finally:
+                setting.save()
+
+        return {"failed_users": fail_user_name, "failed_count": len(fail_user_name), "success_count": len(setting_ids) - len(fail_user_name)}
 
     def pickup_notice(self, setting_ids: List[str], requested_by: str = None):
         return
@@ -211,7 +258,6 @@ class SettingService(CrudBase):
                 setting.save()
 
         return {"failed_users": fail_user_name, "failed_count": len(fail_user_name), "success_count": len(setting_ids) - len(fail_user_name)}
-
 
     def win_setting(self, setting_ids: List[str], requested_by: str = None):
         """
