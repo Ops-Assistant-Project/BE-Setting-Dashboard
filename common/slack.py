@@ -17,3 +17,6 @@ class SlackEnvKey:
     SIGNING_SECRETS = {
         SlackBotName.SETTING_BOT: "gAAAAABpaJQP9_x_drHai_z2NKyqkURbv7YtxSNDJD59JB0bkKiUFYiCv_cz_szFnvX-m_rd4Crvp3jYFoam6-DJ-F_cqrXUqDqkt_Wb169txFqTJoflB1Rmos8KpLk7VuCd8dYh6Y96",
     }
+
+class Channels:
+    DEVICE_PICKUP_INFO = "C0A8FMYSB0F"  # 수령 예약 확인용 관리자 채널

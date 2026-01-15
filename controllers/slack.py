@@ -2,14 +2,15 @@ from fastapi import APIRouter, Request
 from slack_bolt.adapter.fastapi import SlackRequestHandler
 from modules.slack import BoltApp
 from common.slack import SlackBotName
+from services.slack import open_pickup_modal, handle_pickup_submission
 
 router = APIRouter(prefix="/slack", tags=["Slack"])
 
 slack_app = BoltApp(SlackBotName.SETTING_BOT)
 handler = SlackRequestHandler(slack_app)
 
-from services.slack import register_test_command
-register_test_command(slack_app)    # 테스트용 슬래시 커맨드
+slack_app.action("open_pickup_modal")(open_pickup_modal)
+slack_app.view("pickup_info_submit")(handle_pickup_submission)
 
 @router.post("/events")
 async def slack_events(req: Request):
