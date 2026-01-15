@@ -1,11 +1,10 @@
 from datetime import datetime
-from slack_sdk import WebClient
 from typing import List, Dict, Any, Optional
 from models.setting import Setting, QuickActionStatus, QuickAction
 from models.computer import Computer
 from models.employee import Employee
 from modules.okta import OktaClient
-from common.slack import SlackBotToken
+from modules.slack import BoltApp
 from common.okta import OktaGroups
 from common.exceptions import NotFoundError
 from schemas.setting import SettingCreateSchema
@@ -17,7 +16,7 @@ class SettingService(CrudBase):
 
     def __init__(self):
         self.okta_client = OktaClient()
-        self.slack_bot = WebClient(token=SlackBotToken.SETTING_BOT)
+        self.slack_bot = BoltApp(app_name="SETTING_BOT")
         self.SINGLE_EXECUTABLE_STATUS = {
             QuickActionStatus.PENDING,
             QuickActionStatus.ERROR,
@@ -153,6 +152,11 @@ class SettingService(CrudBase):
             "results": results
         }
 
+    def password_notice(self, setting_ids: List[str], requested_by: str = None):
+        return
+
+    def pickup_notice(self, setting_ids: List[str], requested_by: str = None):
+        return
 
     def okta_setting(self, setting_ids: List[str], requested_by: str = None):
         """

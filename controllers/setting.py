@@ -70,16 +70,16 @@ def o365_setting(request: OktaRequest):
     return SettingService().o365_setting(request.setting_ids, request.requested_by)
 
 
-# @router.patch("/action/password-notice", summary="빠른 실행 - 비밀번호 초기화 안내 전송")
-# def password_notice(request: OktaRequest):
-#     return SettingService.password_notice(request.setting_ids)
-#
-#
-# @router.patch("/action/pickup-notice", summary="빠른 실행 - 장비 수령 안내 전송")
-# def pickup_notice(request: OktaRequest):
-#     return SettingService.pickup_notice(request.setting_ids)
-#
-#
+@router.patch("/action/password-notice", summary="빠른 실행 - 비밀번호 초기화 안내 전송")
+def password_notice(request: OktaRequest):
+    return SettingService().password_notice(request.setting_ids, request.requested_by)
+
+
+@router.patch("/action/pickup-notice", summary="빠른 실행 - 장비 수령 안내 전송")
+def pickup_notice(request: OktaRequest):
+    return SettingService().pickup_notice(request.setting_ids, request.requested_by)
+
+
 @router.patch("/action/okta-activate", summary="빠른 실행 - Okta 계정 활성화")
 def okta_activate(request: OktaRequest):
     return SettingService().okta_activate(request.setting_ids, request.requested_by)
