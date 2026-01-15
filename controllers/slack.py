@@ -5,7 +5,7 @@ from common.slack import SlackBotName
 
 router = APIRouter(prefix="/slack", tags=["Slack"])
 
-slack_app = BoltApp.create(SlackBotName.SETTING_BOT)
+slack_app = BoltApp(SlackBotName.SETTING_BOT)
 handler = SlackRequestHandler(slack_app)
 
 from services.slack import register_test_command

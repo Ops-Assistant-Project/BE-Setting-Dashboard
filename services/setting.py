@@ -6,6 +6,7 @@ from models.employee import Employee
 from modules.okta import OktaClient
 from modules.slack import BoltApp
 from common.okta import OktaGroups
+from common.slack import SlackBotName
 from common.exceptions import NotFoundError
 from schemas.setting import SettingCreateSchema
 from services.crud_base import CrudBase
@@ -16,7 +17,7 @@ class SettingService(CrudBase):
 
     def __init__(self):
         self.okta_client = OktaClient()
-        self.slack_bot = BoltApp(app_name="SETTING_BOT")
+        self.slack_bot = BoltApp(SlackBotName.SETTING_BOT)
         self.SINGLE_EXECUTABLE_STATUS = {
             QuickActionStatus.PENDING,
             QuickActionStatus.ERROR,

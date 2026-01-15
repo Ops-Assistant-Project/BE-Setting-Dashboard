@@ -2,18 +2,14 @@ from slack_bolt import App
 from common.crypto import decrypt
 from common.slack import SlackEnvKey
 
+
 class BoltApp:
     """
-    Slack Bolt App 생성 팩토리
+    Slack Bolt App 싱글톤 래퍼
     """
-
     _apps: dict[str, App] = {}
 
-    @classmethod
-    def create(cls, app_name: str) -> App:
-        """
-        app_name 기준으로 Slack Bolt App 반환 
-        """
+    def __new__(cls, app_name: str) -> App:
         if app_name in cls._apps:
             return cls._apps[app_name]
 
