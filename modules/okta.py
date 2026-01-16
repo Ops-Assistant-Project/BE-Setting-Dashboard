@@ -13,7 +13,7 @@ class OktaClient():
             "Authorization": f"Bearer {os.getenv('OKTA_AUTH_TOKEN')}",
         }
 
-    def okta_call_api(self, endpoint: str = None, params: dict = None, method: str = 'GET') -> CommonResponse:
+    def okta_call_api(self, endpoint: str = None, payload: dict = None, method: str = 'GET') -> CommonResponse:
         if method:
             method = method.upper()
 
@@ -21,7 +21,7 @@ class OktaClient():
             response = requests.request(
                 method=method,
                 url=f"{self.base_url}{endpoint}",
-                params=params,
+                json=payload,
                 headers=self.headers,
             )
         except requests.RequestException as e:
@@ -59,3 +59,18 @@ class OktaClient():
         """
         return self.okta_call_api(endpoint=f"/users/{user_id}/lifecycle/activate?sendEmail={send_email}", method="POST")
 
+    def admin_set_password(self, user_id: str, new_password: str):
+        """
+        관리자용 사용자 비밀번호 초기화
+        :param user_id: Okta user id
+        :param new_password: 변경할 비밀번호
+        :return:
+        """
+        return self.okta_call_api(endpoint=f"/users/{user_id}", method="POST",
+                                    payload={
+                                        "credentials": {
+                                            "password": {
+                                                "value": new_password
+                                            }
+                                        }
+                                    })

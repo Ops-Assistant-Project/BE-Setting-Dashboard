@@ -218,3 +218,71 @@ def pickup_reserve_message_block(user_slack_id: str, pickup_date: str, pickup_ti
             ]
         }
     ]
+
+def password_reset_message_block(password: str):
+    return [
+		{
+			"type": "header",
+			"text": {
+				"type": "plain_text",
+				"text": "🔐 Okta 비밀번호 초기화 완료",
+				"emoji": True
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "장비 세팅을 위해 *Okta 비밀번호가 자동으로 초기화* 되었어요 \n아래 버튼을 눌러 초기화된 비밀번호를 확인해주세요"
+			}
+		},
+		{
+			"type": "context",
+			"elements": [
+				{
+					"type": "mrkdwn",
+					"text": "⚠️ 장비 수령 전까지는 *비밀번호를 변경하지 말아주세요*"
+				}
+			]
+		},
+		{
+			"type": "actions",
+			"elements": [
+				{
+					"type": "button",
+					"style": "primary",
+					"text": {
+						"type": "plain_text",
+						"text": "🔑 비밀번호 확인",
+						"emoji": True
+					},
+                    "value": password,
+					"action_id": "open_password_modal"
+				}
+			]
+		}
+	]
+
+def password_check_modal_view(password: str):
+    return {
+        "type": "modal",
+        "callback_id": "password_confirm_view",
+        "title": {
+            "type": "plain_text",
+            "text": "비밀번호 확인",
+            "emoji": True
+        },
+        "close": {
+            "type": "plain_text",
+            "text": "닫기"
+        },
+        "blocks": [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"```{password}```"
+                }
+            }
+        ]
+    }

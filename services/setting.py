@@ -3,9 +3,10 @@ from typing import List, Dict, Any, Optional
 from models.setting import Setting, QuickActionStatus, QuickAction
 from models.computer import Computer
 from models.employee import Employee
-from modules.okta import OktaClient
 from modules.slack import BoltApp
-from blocks.setting import password_notice_message_block, pickup_notice_message_block, pickup_notice_button_block
+from modules.okta import OktaClient
+from modules.password import generate_password_for_week
+from blocks.setting import password_notice_message_block, pickup_notice_message_block, pickup_notice_button_block, password_reset_message_block
 from common.okta import OktaGroups
 from common.slack import SlackBotName
 from common.exceptions import NotFoundError
@@ -190,7 +191,7 @@ class SettingService(CrudBase):
                 # 슬랙 안내 DM 전송
                 self.slack_bot.chat_postMessage(
                     channel=user.slack_id,
-                    text="Okta 비밀번호 초기화 안내",
+                    text="Okta 비밀번호 초기화 예정",
                     blocks=password_notice_message_block(user_name=user.name)
                 )
 
@@ -296,15 +297,26 @@ class SettingService(CrudBase):
                 if not user:
                     raise Exception("User not found")
 
-                # # okta-setting 그룹에 유저 추가
+                # okta-setting 그룹에 유저 추가
                 # res = self.okta_client.add_user_to_group(group_id=OktaGroups.ALL_SETTING, user_id=user.okta_user_id)
                 # if not res.ok:
                 #     raise Exception(res.error or "Okta Setting group assignment failed")
 
+                # OKTA 계정 비밀번호 초기화
+                new_password = generate_password_for_week()
+                # res = self.okta_client.admin_set_password(user_id=user.okta_user_id, new_password=new_password)
+                # if not res.ok:
+                #     raise Exception(res.error or "Okta password reset failed")
+
+                # 초기화 비밀번호 DM으로 전송
+                self.slack_bot.chat_postMessage(
+                    channel=user.slack_id,
+                    text="Okta 비밀번호 초기화 안내",
+                    blocks=password_reset_message_block(new_password)
+                )
+
                 # 성공 시
                 self._mark_quick_action_done(action=quick_action)
-
-                # TODO: 비밀번호 초기화 및 초기화 안내 전송 추가
             except Exception as e:
                 self._mark_quick_action_error(action=quick_action, error_message=str(e))
                 fail_user_name.append(setting.user_name)

@@ -2,7 +2,7 @@ import json
 from slack_sdk.errors import SlackApiError
 from common.slack import Channels
 from common.slack_blocks import get_mrkdwn_block
-from blocks.setting import pickup_notice_modal_view, pickup_reserve_message_block
+from blocks.setting import pickup_notice_modal_view, pickup_reserve_message_block, password_check_modal_view
 
 # @slack_app.action("open_pickup_modal")
 def open_pickup_modal(ack, body, client):
@@ -43,6 +43,18 @@ def handle_pickup_submission(ack, body, client):
             ts=message_ts,
             text="장비 수령 예약 완료",
             blocks=[get_mrkdwn_block(f"수령 예약: *{pickup_date} {pickup_time}* / 백업디스크: *{pickup_disk}*")]
+        )
+    except SlackApiError as e:
+        print(f"Slack error: {e.response['error']}")
+
+# @slack_app.action("open_password_modal")
+def open_password_modal(ack, body, client):
+    ack()
+    password = body["actions"][0]["value"]
+    try:
+        client.views_open(
+            trigger_id=body["trigger_id"],
+            view=password_check_modal_view(password)
         )
     except SlackApiError as e:
         print(f"Slack error: {e.response['error']}")
