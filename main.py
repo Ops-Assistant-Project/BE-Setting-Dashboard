@@ -1,18 +1,21 @@
 from fastapi import FastAPI
+from db.mongodb import connect_to_mongo
+from controllers.slack import router as SlackRouter
 from controllers.setting import router as SettingController
-from db.mongodb import connect_to_mongo, close_mongo_connection
+from controllers.employee import router as EmployeeController
 
-app = FastAPI()
-@app.get("/")
-def root():
-    return {"message": "Hello World"}
+app = FastAPI(title="PC Setting Dashboard API")
+
 
 @app.on_event("startup")
 def startup():
     connect_to_mongo()
 
-@app.on_event("shutdown")
-def shutdown():
-    close_mongo_connection()
 
+@app.get("/")
+def root():
+    return {"message": "Hello World"}
+
+app.include_router(SlackRouter)
 app.include_router(SettingController)
+app.include_router(EmployeeController)
