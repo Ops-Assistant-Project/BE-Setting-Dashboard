@@ -58,7 +58,8 @@ class SettingService(CrudBase):
                 quick_actions = cls.generate_quick_actions(os=computer.os, onboarding_type=data.onboarding_type),
                 company = data.company,
                 requested_date = data.requested_date,
-                due_date = data.due_date
+                due_date = data.due_date,
+                is_manual = True
             )
         else:
             user = Employee.objects(email=data.user_email).first()
@@ -78,7 +79,8 @@ class SettingService(CrudBase):
                 quick_actions = cls.generate_quick_actions(os=data.os, onboarding_type=data.onboarding_type),
                 company = data.company,
                 requested_date = data.requested_date,
-                due_date = data.due_date
+                due_date = data.due_date,
+                is_manual = True
             )
 
         setting.save()

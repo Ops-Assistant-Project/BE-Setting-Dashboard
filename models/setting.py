@@ -101,6 +101,7 @@ class Setting(Document):
     memo = StringField(null=True)
     checklist = EmbeddedDocumentListField(CheckListItem)
     quick_actions = EmbeddedDocumentListField(QuickAction)
+    is_manual = BooleanField(default=False) # 데이터 자동 생성 / 수동 생성(True)
 
     assignee_name = StringField(null=True)
     company = EnumField(Company, required=True)
