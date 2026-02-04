@@ -7,6 +7,8 @@
 
 <img width="800" height="473" alt="image" src="https://github.com/user-attachments/assets/e656df5c-542e-44c1-84e6-83ffe12d17a7" />
 
+<br/>
+<br/>
 
 ## 📌 프로젝트 정보
 
@@ -113,11 +115,7 @@ PC 세팅 담당 팀의 업무는 **단계가 많고, 확인해야 할 정보가
 | <img width="400" height="225" src="https://github.com/user-attachments/assets/93f5e5ae-c46e-4e68-a98e-13310c258984"> | <img width="400" height="225" src="https://github.com/user-attachments/assets/10231a5e-c535-43c4-b584-c9d7b8761b80"> |
 |       **개별 조회**       |          **세팅 삭제**           |
 | <img width="400" height="225" src="https://github.com/user-attachments/assets/f165ff8f-41fd-4eac-a962-48f35a97ad21"> | <img width="400" height="225" src="https://github.com/user-attachments/assets/e485938a-35a3-4cd3-9972-6292f398620f"> |
-
-<br/>
-
-|             개인정보 수정             |            체크리스트 수정            |
-| :-----------------------------------: | :-----------------------------------: |
+|             **개인정보 수정**             |            **체크리스트 수정**            |
 | <img width="400" height="225" src="https://github.com/user-attachments/assets/768f1f9d-7e40-4d1f-8554-aaa1b5e68ddf"> | <img width="400" height="225" src="https://github.com/user-attachments/assets/f447884c-858a-4c31-ace0-42cb24f397fd"> |
 |             **메모 수정**             |             **상태 수정**             |
 | <img width="400" height="225" src="https://github.com/user-attachments/assets/f488476f-0f81-4595-89c7-151d108f3eda"> | <img width="400" height="225" src="https://github.com/user-attachments/assets/855cd31a-7f99-4403-bd12-9df57ab8b674"> |
@@ -139,7 +137,7 @@ PC 세팅 담당 팀의 업무는 **단계가 많고, 확인해야 할 정보가
   - 비밀번호 초기화 안내 DM
   - 장비 수령 안내 DM
 
-|         상세 패널 - 빠른 작업         |          Slack DM 전송 결과           |
+|         개별 빠른 작업         |          Slack DM 전송 결과           |
 | :-----------------------------------: | :-----------------------------------: |
 | <img width="400" height="225" src="https://github.com/user-attachments/assets/fbc65959-4b7e-43f5-a1e9-8867e46ed4e2"> | <img width="400" height="225" src="https://github.com/user-attachments/assets/c1949088-147d-4d27-8f55-940375826171"> |
 
@@ -169,3 +167,4 @@ PC 세팅 담당 팀의 업무는 **단계가 많고, 확인해야 할 정보가
 - Apache Airflow 배치 처리
   - 출고 완료 시 세팅 대시보드에 자동 추가
 - 수동 데이터 입력 최소화
+
