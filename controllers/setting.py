@@ -39,7 +39,7 @@ def get_setting(setting_id: str):
 
 @router.get("/", summary="List settings")
 def list_settings():
-    return SettingService.list()
+    return SettingService.list(order_by="-created_at")
 
 
 @router.patch("/", summary="Bulk update settings")

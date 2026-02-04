@@ -25,11 +25,16 @@ class CrudBase:
         return serialize_mongo(data)
 
     @classmethod
-    def list(cls, filters: Optional[Dict[str, Any]] = None):
+    def list(cls, filters: Optional[Dict[str, Any]] = None, order_by: Optional[str] = None):
         filters = filters or {}
         results = []
 
-        for obj in cls.model.objects(**filters):
+        qs = cls.model.objects(**filters)
+
+        if order_by:
+            qs = qs.order_by(order_by)
+
+        for obj in qs:
             data = obj.to_mongo().to_dict()
             data["id"] = str(obj.id)
             data.pop("_id", None)

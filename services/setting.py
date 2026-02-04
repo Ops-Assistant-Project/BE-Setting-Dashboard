@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from models.setting import Setting, QuickActionStatus, QuickAction
-from models.computer import Computer
+from models.computer import Computer, ComputerStatus
 from models.employee import Employee
 from modules.slack import BoltApp
 from modules.okta import OktaClient
@@ -58,7 +58,8 @@ class SettingService(CrudBase):
                 quick_actions = cls.generate_quick_actions(os=computer.os, onboarding_type=data.onboarding_type),
                 company = data.company,
                 requested_date = data.requested_date,
-                due_date = data.due_date
+                due_date = data.due_date,
+                is_manual = True
             )
         else:
             user = Employee.objects(email=data.user_email).first()
@@ -78,7 +79,8 @@ class SettingService(CrudBase):
                 quick_actions = cls.generate_quick_actions(os=data.os, onboarding_type=data.onboarding_type),
                 company = data.company,
                 requested_date = data.requested_date,
-                due_date = data.due_date
+                due_date = data.due_date,
+                is_manual = True
             )
 
         setting.save()
@@ -126,6 +128,7 @@ class SettingService(CrudBase):
                     "onboarding_type" in data
                     and data["onboarding_type"] != setting.onboarding_type
             )
+            status_changed = "status" in data and data["status"] != setting.status
 
             if os_changed or onboarding_changed:
                 new_os = data.get("os", setting.os)
@@ -139,6 +142,11 @@ class SettingService(CrudBase):
                     onboarding_type=new_onboarding_type,
                     prev_actions=setting.quick_actions
                 )
+
+            if not setting.is_manual and status_changed and data["status"] == "completed":
+                computer = Computer.objects(serial=setting.serial).first()
+                computer.status = ComputerStatus.USE
+                computer.save()
 
             updated = cls.model.objects(id=setting_id).update_one(**{
                 f"set__{k}": v for k, v in update_data.items()
