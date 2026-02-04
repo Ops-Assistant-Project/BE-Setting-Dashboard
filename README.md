@@ -55,6 +55,7 @@ PC 세팅 담당 팀의 업무는 **단계가 많고, 확인해야 할 정보가
     <td style="padding: 10px;">
         <img src="https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white" />
         <img src="https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white" />
+        <img src="https://img.shields.io/badge/Bolt-611f69?style=flat&logo=slack&logoColor=white" />
     </td>
   </tr>
   <tr>
