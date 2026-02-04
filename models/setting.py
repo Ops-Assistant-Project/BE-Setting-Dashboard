@@ -8,6 +8,7 @@ from mongoengine import (
     EmbeddedDocumentListField,
 )
 from mongoengine.fields import EnumField
+from datetime import datetime
 
 
 class Role(str, Enum):
@@ -110,6 +111,9 @@ class Setting(Document):
     requested_date = DateTimeField(null=True)
     due_date = DateTimeField(null=True)
     completed_date = DateTimeField(null=True)
+
+    created_at = DateTimeField(default=datetime.utcnow)
+
 
     meta = {
         "collection": "setting",
