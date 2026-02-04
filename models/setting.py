@@ -9,6 +9,7 @@ from mongoengine import (
 )
 from mongoengine.fields import EnumField
 from datetime import datetime
+from models.employee import Company
 
 
 class Role(str, Enum):
@@ -40,12 +41,6 @@ class SettingStatus(str, Enum):
     SHIPPED = "shipped" # 출고 완료
     SETTING = "setting" # 세팅 중
     COMPLETED = "completed" # 세팅 완료
-
-
-class Company(str, Enum):
-    CORE = "core"
-    BANK = "bank"
-    INSU = "insu"
 
 
 class QuickActionStatus(str, Enum):
@@ -94,7 +89,7 @@ class Setting(Document):
     network_type = EnumField(NetworkType, required=True)
 
     # 상태 정보
-    urgency = BooleanField(required=True)   # True: 급건 / False: 일반
+    urgency = BooleanField(required=True, default= False)   # True: 급건 / False: 일반
     onboarding_type = EnumField(OnboardingType, required=True)
     status = EnumField(SettingStatus, required=True)
 

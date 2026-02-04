@@ -12,6 +12,10 @@ class Role(str, Enum):
     TEAM = "team"   # 팀원
     ASST = "asst"   # 어시
 
+class Company(str, Enum):
+    CORE = "core"
+    BANK = "bank"
+    INSU = "insu"
 
 class Employee(Document):
     meta = {"collection": "employees"}
@@ -20,6 +24,7 @@ class Employee(Document):
     name = StringField(required=True)
     email = EmailField(required=True, unique=True)
     role = EnumField(Role, required=True)
+    company = EnumField(Company, required=True)
 
     okta_user_id = StringField()
     ldap_id = StringField()
