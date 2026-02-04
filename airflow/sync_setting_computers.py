@@ -1,19 +1,27 @@
 from datetime import datetime
-from models.computer import Computer
+from models.computer import Computer, ComputerStatus
 from models.setting import Setting
 from models.employee import Employee
 from services.setting import SettingService
 
 
 def sync_setting_computers():
+    """
+    computer.status == SETTING -> setting에 자동 추가
+    computer.status == USE -> setting에서 자동 삭제
+    :return:
+    """
     existing_serials = set(
         Setting.objects.only("serial").scalar("serial")
     )
 
-    target_computers = Computer.objects(status="setting")
+    target_computers = Computer.objects(status=ComputerStatus.SETTING)
     created_count = 0
+    deleted_count = 0
+
     service = SettingService()
 
+    # SETTING 추가
     for computer in target_computers:
         if computer.serial in existing_serials:
             continue
@@ -38,4 +46,16 @@ def sync_setting_computers():
 
         created_count += 1
 
-    return created_count
+    # USE 삭제
+    use_computers = Computer.objects(status=ComputerStatus.USE)
+    use_serial = {computer.serial for computer in use_computers}
+
+    delete_targets = existing_serials & use_serial
+
+    if delete_targets:
+        deleted_count = Setting.objects(serial__in=list(delete_targets)).delete()
+
+    return {
+        "created": created_count,
+        "deleted": deleted_count,
+    }

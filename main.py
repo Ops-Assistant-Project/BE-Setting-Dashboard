@@ -11,6 +11,10 @@ origins = [
     "http://localhost:5173",
 ]
 
+from airflow.sync_setting_computers import sync_setting_computers
+connect_to_mongo()
+sync_setting_computers()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
